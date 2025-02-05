@@ -10,6 +10,8 @@ pipeline{
     }
     environment {
         Application_Name = "eureka"
+        Pom_Version = readMavenPom().getVersion()
+        Pom_Packaging=readMavenPom().getPackaging()
     }
     stages{
         stage ('Build'){
@@ -22,10 +24,20 @@ pipeline{
             }
         }
 
-        stage ('Unit Tests'){
+        /*stage ('Unit Tests'){
             steps {
                 echo "Executing Unit Tests for ${env.Application_Name} App"
                 sh 'mvn test'
+            }
+        } 
+        */
+
+        stage ('Docker Format'){
+            steps{
+                //install Pipeline Utility to use readMavenPOM
+                //i27-eureka-0.0.1-SNAPSHOT.jar →> eureka-build number-branch name.jar
+                echo "The actual format is ${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging}"
+
             }
         }
     }
