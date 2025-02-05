@@ -33,6 +33,7 @@ pipeline{
         */
 
         stage ('Docker Format'){
+            // This is to format artifact
             steps{
                 //install Pipeline Utility to use readMavenPOM
                 //i27-eureka-0.0.1-SNAPSHOT.jar →> eureka-build number-branch name.jar
