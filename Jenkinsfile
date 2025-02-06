@@ -13,6 +13,7 @@ pipeline{
         Pom_Version = readMavenPom().getVersion()
         Pom_Packaging = readMavenPom().getPackaging()
         Docker_Hub = "docker.io/aadil08"
+        Docker_Creds = credentials('docker_creds')
         
     }
     stages{
@@ -60,6 +61,9 @@ pipeline{
                 echo "********************* Building Docker Image ********************"
                 docker build --force-rm  --no-cache --build-arg JAR_SRC=i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging}  -t ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT} ./.cicd
                 docker images
+
+                echo "********************* Login to Docker Repo ********************"
+                docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
                 """
             }
         }
