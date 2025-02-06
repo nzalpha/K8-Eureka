@@ -45,5 +45,11 @@ pipeline{
 
             }
         }
+
+        stage ('Docker Build & Push') {
+            steps{
+                echo "Starting Docker Build "
+            }
+        }
     }
 }
