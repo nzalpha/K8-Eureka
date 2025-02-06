@@ -63,7 +63,11 @@ pipeline{
                 docker images
 
                 echo "********************* Login to Docker Repo ********************"
-                docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
+                docker login -u ${Docker_Creds_USR} -p ${Docker_Creds_PSW}
+
+                echo "********************* Docker Push ********************"
+                docker push ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}
+
                 """
             }
         }
