@@ -58,7 +58,7 @@ pipeline{
                 cp ${WORKSPACE}/target/i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging} ./.cicd/
 
                 echo "********************* Building Docker Image ********************"
-                docker build --build-arg JAR_SRC=i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging}  -t ${env.Docker_Hube}/${env.Application_Name}:${GIT_COMMIT} ./.cicd
+                docker build --build-arg JAR_SRC=i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging}  -t ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT} ./.cicd
                 docker images
                 """
             }
