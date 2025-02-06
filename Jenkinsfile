@@ -18,7 +18,7 @@ pipeline{
     }
     stages{
         stage ('Build'){
-            // This will take care of building the application
+            // This will takee care of building the application
             steps{
                 echo "Building ${env.Application_Name} Application"
                 // build using maven
