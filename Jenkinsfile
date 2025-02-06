@@ -11,7 +11,9 @@ pipeline{
     environment {
         Application_Name = "eureka"
         Pom_Version = readMavenPom().getVersion()
-        Pom_Packaging=readMavenPom().getPackaging()
+        Pom_Packaging = readMavenPom().getPackaging()
+        Docker_Hub = "docker.io/aadil08"
+        
     }
     stages{
         stage ('Build'){
@@ -52,6 +54,12 @@ pipeline{
                 sh """
                 ls -la
                 pwd
+                echo "Copy the jar to the folder where Docker file is present"
+                cp ${WORKSPACE}/target/i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging} ./.cicd/
+
+                echo "********************* Building Docker Image ********************"
+                docker build --build-arg JAR_SRC=i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging}  -t ${env.Docker_Hube}/${env.Application_Name}:${GIT_COMMIT} ./.cicd
+                docker images
                 """
             }
         }
