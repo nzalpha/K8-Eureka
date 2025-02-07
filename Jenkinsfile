@@ -74,8 +74,8 @@ pipeline{
 
         stage ('Deploy to Dev'){
             steps {
-                echo "*************************  Deploy to Dev  *****************************"
-                withCredentials([usernamePassword(credentialsId: 'ali_dock-vm', passwordVariable: 'password', usernameVariable: 'username')]) {
+               // echo "*************************  Deploy to Dev  *****************************"
+                //withCredentials([usernamePassword(credentialsId: 'ali_dock-vm', passwordVariable: 'password', usernameVariable: 'username')]) {
                 //With this block Slave will connect to docker server using ssh and will execute the commands we want.
                 // Connect to the Docker Server from Jenkin machine. Credentials for user ali are stored in Jenkin  using the above. The user ali is root user in Docker machine which we created.
                 // When we execute this, jenking master initiates jenkin slave. Jenkin slave will connect to Docker Vm using the cred and execuste
@@ -86,10 +86,10 @@ pipeline{
                 // Command: docker run -d -p hp:cp --name containername image:tagname ( container port 8761 is always same in all different environment for Eureka application)
                 // docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}
               //  sh "sshpass -p  ${password} ssh -o StrictHostKeyChecking=no ${username}@${docker_server_ip} docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
-
-                 echo "*************************  Running the Dev Container  *****************************"
-                docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
                 }
+                 echo "*************************  Running the Dev Container  *****************************"
+                docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}
+                
 
             }
         }
