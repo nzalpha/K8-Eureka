@@ -93,8 +93,9 @@ pipeline{
                 }
             }
             steps{
+                script{
                dockerBuildandPush().call()
-                
+                }
             }
         }
 
