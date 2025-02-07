@@ -49,10 +49,9 @@ pipeline{
 
             // This will takee care of building the application
             steps{
-                echo "Building ${env.Application_Name} Application"
-                // build using maven
-                sh 'mvn clean package -DskipTests=true'
-                archiveArtifacts artifacts: 'target/*.jar'
+                script{
+                    buildApp().call()
+                }
             }
         }
 
@@ -94,24 +93,8 @@ pipeline{
                 }
             }
             steps{
-                echo "Starting Docker Build "
-                sh """
-                ls -la
-                pwd
-                echo "Copy the jar to the folder where Docker file is present"
-                cp ${WORKSPACE}/target/i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging} ./.cicd/
-
-                echo "********************* Building Docker Image ********************"
-                docker build --force-rm  --no-cache --build-arg JAR_SRC=i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging}  -t ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT} ./.cicd
-                docker images
-
-                echo "********************* Login to Docker Repo ********************"
-                docker login -u ${Docker_Creds_USR} -p ${Docker_Creds_PSW}
-
-                echo "********************* Docker Push ********************"
-                docker push ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}
-
-                """
+               dockerBuildandPush().call()
+                
             }
         }
 
@@ -125,6 +108,7 @@ pipeline{
             }
             steps {
                 script{
+                    imageValidation().call()
                     dockerDeploy('dev', '5761', '8761' ).call()
                 }
             }
@@ -140,6 +124,7 @@ pipeline{
             }
             steps {
                 script{
+                    imageValidation().call()
                     dockerDeploy('stg', '7761', '8761' ).call()
                 }
             }
@@ -155,6 +140,7 @@ pipeline{
             }
             steps {
                 script{
+                    imageValidation().call()
                     dockerDeploy('prd', '8761', '8761' ).call()
                 }
             }
@@ -186,6 +172,42 @@ pipeline{
      }
  }
 
+def imageValidation(){
+    return{
+        println ("Pulling the docker image")
+        try{
+            sh "docker pull  ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+        }
+        catch (Exception e){
+            println("Docker image with this tag doesnt exist, so creating the image")
+            buildApp().call()
+            dockerBuildandPush().call()
+        }
+    }
+}
+
+def buildApp(){
+    return {
+        echo "Building ${env.Application_Name} Application"
+        // build using maven
+        sh 'mvn clean package -DskipTests=true'
+        archiveArtifacts artifacts: 'target/*.jar'
+    }
+}
+
+def dockerBuildandPush(){
+    return{
+        echo "Starting Docker Build "
+        echo "Copy the jar to the folder where Docker file is present"
+        sh "cp ${WORKSPACE}/target/i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging} ./.cicd/"
+        echo "********************* Building Docker Image ********************"
+        sh "docker build --force-rm  --no-cache --build-arg JAR_SRC=i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging}  -t ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT} ./.cicd"
+        echo "********************* Login to Docker Repo ********************"
+        sh "docker login -u ${Docker_Creds_USR} -p ${Docker_Creds_PSW}"
+        echo "********************* Docker Push ********************"
+        sh "docker push ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+    }
+}
 
  // --------------------------------------------- For Reference -----------------------------------------
 
