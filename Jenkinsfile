@@ -87,13 +87,29 @@ pipeline{
                 // docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}
               //  sh "sshpass -p  ${password} ssh -o StrictHostKeyChecking=no ${username}@${docker_server_ip} docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
                 //}
-                
-                 echo "*************************  Running the Dev Container  *****************************"
+
+                script{
+                    // This block is written because if the container is running already and run the jenkin file it was throwing error because the container name already exists so we are writing the below
+                    // to make sure we catch any exception in try catch.
+
+                    // pull the image 
+                  sh "docker pull  ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+
+                  try{
+                    //Stop the container
+                    sh "docker stop ${env.Application_Name}-dev"
+
+                    //remove the container
+                    sh "docker rm ${env.Application_Name}-dev"
+
+                  } catch(err){
+                    echo "Error Caught: $err"
+                  }
+                  // create the container
+                echo "*************************  Running the Dev Container  *****************************"
                 sh "docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+                }
             }
-
-            }
-        
-
+        }
     }
 }
