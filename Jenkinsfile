@@ -88,7 +88,7 @@ pipeline{
               //  sh "sshpass -p  ${password} ssh -o StrictHostKeyChecking=no ${username}@${docker_server_ip} docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
                 }
                  echo "*************************  Running the Dev Container  *****************************"
-                docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}
+                sh "docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
                 
 
             }
