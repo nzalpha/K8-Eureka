@@ -1,7 +1,4 @@
-# learer-eureka new
 
-# New change from helm
-# Siva
 Run this project as a Spring Boot app (e.g. import into IDE and run
 main method, or use "mvn spring-boot:run or gradle bootRun or ./gradlew bootRun"). It will start up on port
 8761 and serve the Eureka API from "/eureka".
@@ -14,10 +11,4 @@ main method, or use "mvn spring-boot:run or gradle bootRun or ./gradlew bootRun"
 | /eureka/apps         | Raw registration metadata |
 
 
-/ small code change
 
-new change
-
-changd code
-
-# jforg
