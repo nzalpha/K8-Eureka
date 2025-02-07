@@ -4,6 +4,27 @@ pipeline{
         label 'workernode-2'
     }
 
+    parameters{
+        choice (name: 'buildOnly',
+                choices: 'no\nyes',
+                description: "Build the Application only")
+        choice (name: 'dockerformat',
+                choices: 'no\nyes',
+                description: "format docker")
+        choice (name: 'dockerPush',
+                choices: 'no\nyes',
+                description: "this will push to registry")
+        choice (name: 'deployToDev',
+                choices: 'no\nyes',
+                description: "Deploy app to Dev only ")
+        choice (name: 'deployToStg',
+                choices: 'no\nyes',
+                description: "Deploy app to Stage only ")
+        choice (name: 'deployToProd',
+                choices: 'no\nyes',
+                description: "Deploy app to Prod only ")
+    }
+
     tools{
         maven 'mvn-3.8.8'
         jdk 'jdk-17'
@@ -18,6 +39,14 @@ pipeline{
     }
     stages{
         stage ('Build'){
+            when {
+                anyOf{
+                    expression {
+                        params.buildOnly == "yes"
+                    }
+                }
+            }
+
             // This will takee care of building the application
             steps{
                 echo "Building ${env.Application_Name} Application"
@@ -36,6 +65,13 @@ pipeline{
         */
 
         stage ('Docker Format'){
+             when {
+                anyOf{
+                    expression {
+                        params.dockerformat == "yes"
+                    }
+                }
+            }
             // This is to format artifact
             steps{
                 //install Pipeline Utility to use readMavenPOM
@@ -50,6 +86,13 @@ pipeline{
         }
 
         stage ('Docker Build & Push') {
+             when {
+                anyOf{
+                    expression {
+                        params.dockerPush == "yes"
+                    }
+                }
+            }
             steps{
                 echo "Starting Docker Build "
                 sh """
@@ -73,6 +116,13 @@ pipeline{
         }
 
         stage ('Deploy to Dev'){
+           when {
+                anyOf{
+                    expression {
+                        params.deployToDev == "yes"
+                    }
+                }
+            }
             steps {
                 script{
                     dockerDeploy('dev', '5761', '8761' ).call()
@@ -81,6 +131,13 @@ pipeline{
         }
 
         stage ("Deploy to Stage"){
+          when {
+                anyOf{
+                    expression {
+                        params.deployToStg == "yes"
+                    }
+                }
+            }
             steps {
                 script{
                     dockerDeploy('stg', '7761', '8761' ).call()
@@ -89,6 +146,13 @@ pipeline{
         }
 
         stage ("Deploy to Prod"){
+            when {
+                anyOf{
+                    expression {
+                        params.deployToProd == "yes"
+                    }
+                }
+            }
             steps {
                 script{
                     dockerDeploy('prd', '8761', '8761' ).call()
