@@ -178,7 +178,7 @@ pipeline{
                 echo "Error Caught: $err"
               }
             // create the container
-            echo "*************************  Running the stg Container  *****************************"
+            echo "*************************  Running the  ${envDeploy} Container  *****************************"
             sh "docker run -d -p ${hostPort}:${contPort} --name ${env.Application_Name}-${envDeploy} ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
             }
      }
