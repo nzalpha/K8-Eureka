@@ -131,7 +131,7 @@ pipeline{
             }
         }
 
-        stage ("Deploy to Prod"){
+        stage ("Deploy to Prod With approval"){
             when {
                 anyOf{
                     expression {
