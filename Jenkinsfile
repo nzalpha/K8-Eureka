@@ -1,7 +1,28 @@
 
 pipeline{
     agent{
-        label 'workernode-1'
+        label 'workernode-2'
+    }
+
+    parameters{
+        choice (name: 'buildOnly',
+                choices: 'no\nyes',
+                description: "Build the Application only")
+        choice (name: 'dockerformat',
+                choices: 'no\nyes',
+                description: "format docker")
+        choice (name: 'dockerPush',
+                choices: 'no\nyes',
+                description: "this will push to registry")
+        choice (name: 'deployToDev',
+                choices: 'no\nyes',
+                description: "Deploy app to Dev only ")
+        choice (name: 'deployToStg',
+                choices: 'no\nyes',
+                description: "Deploy app to Stage only ")
+        choice (name: 'deployToProd',
+                choices: 'no\nyes',
+                description: "Deploy app to Prod only ")
     }
 
     tools{
@@ -18,12 +39,19 @@ pipeline{
     }
     stages{
         stage ('Build'){
+            when {
+                anyOf{
+                    expression {
+                        params.buildOnly == "yes"
+                    }
+                }
+            }
+
             // This will takee care of building the application
             steps{
-                echo "Building ${env.Application_Name} Application"
-                // build using maven
-                sh 'mvn clean package -DskipTests=true'
-                archiveArtifacts artifacts: 'target/*.jar'
+                script{
+                    buildApp().call()
+                }
             }
         }
 
@@ -36,6 +64,13 @@ pipeline{
         */
 
         stage ('Docker Format'){
+             when {
+                anyOf{
+                    expression {
+                        params.dockerformat == "yes"
+                    }
+                }
+            }
             // This is to format artifact
             steps{
                 //install Pipeline Utility to use readMavenPOM
@@ -50,107 +85,169 @@ pipeline{
         }
 
         stage ('Docker Build & Push') {
+             when {
+                anyOf{
+                    expression {
+                        params.dockerPush == "yes"
+                    }
+                }
+            }
             steps{
-                echo "Starting Docker Build "
-                sh """
-                ls -la
-                pwd
-                echo "Copy the jar to the folder where Docker file is present"
-                cp ${WORKSPACE}/target/i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging} ./.cicd/
-
-                echo "********************* Building Docker Image ********************"
-                docker build --force-rm  --no-cache --build-arg JAR_SRC=i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging}  -t ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT} ./.cicd
-                docker images
-
-                echo "********************* Login to Docker Repo ********************"
-                docker login -u ${Docker_Creds_USR} -p ${Docker_Creds_PSW}
-
-                echo "********************* Docker Push ********************"
-                docker push ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}
-
-                """
+                script{
+               dockerBuildandPush().call()
+                }
             }
         }
 
         stage ('Deploy to Dev'){
+           when {
+                anyOf{
+                    expression {
+                        params.deployToDev == "yes"
+                    }
+                }
+            }
             steps {
-               // echo "*************************  Deploy to Dev  *****************************"
-                //withCredentials([usernamePassword(credentialsId: 'ali_dock-vm', passwordVariable: 'password', usernameVariable: 'username')]) {
-                //With this block Slave will connect to docker server using ssh and will execute the commands we want.
-                // Connect to the Docker Server from Jenkin machine. Credentials for user ali are stored in Jenkin  using the above. The user ali is root user in Docker machine which we created.
-                // When we execute this, jenking master initiates jenkin slave. Jenkin slave will connect to Docker Vm using the cred and execuste
-                
-                
-                // As we dont want to hardcode ip address, we can keep public ip addrs as "Environment variables" under Manage Jenkins>System>Global Properties
-                //sshpass -p password ssh -o StrictHostKeyChecking=no username@ipaddress command_to_run. 
-                // Command: docker run -d -p hp:cp --name containername image:tagname ( container port 8761 is always same in all different environment for Eureka application)
-                // docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}
-              //  sh "sshpass -p  ${password} ssh -o StrictHostKeyChecking=no ${username}@${docker_server_ip} docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
-                //}
-
                 script{
-                    // This block is written because if the container is running already and run the jenkin file it was throwing error because the container name already exists so we are writing the below
-                    // to make sure we catch any exception in try catch.
-
-                    // pull the image 
-                  sh "docker pull  ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
-
-                  try{
-                    //Stop the container
-                    sh "docker stop ${env.Application_Name}-dev"
-
-                    //remove the container
-                    sh "docker rm ${env.Application_Name}-dev"
-
-                  } catch(err){
-                    echo "Error Caught: $err"
-                  }
-                  // create the container
-                echo "*************************  Running the Dev Container  *****************************"
-                sh "docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+                    imageValidation().call()
+                    dockerDeploy('dev', '5761', '8761' ).call()
                 }
             }
         }
 
         stage ("Deploy to Stage"){
+          when {
+                anyOf{
+                    expression {
+                        params.deployToStg == "yes"
+                    }
+                }
+            }
             steps {
-               // echo "*************************  Deploy to stage  *****************************"
-                //withCredentials([usernamePassword(credentialsId: 'ali_dock-vm', passwordVariable: 'password', usernameVariable: 'username')]) {
-                //With this block Slave will connect to docker server using ssh and will execute the commands we want.
-                // Connect to the Docker Server from Jenkin machine. Credentials for user ali are stored in Jenkin  using the above. The user ali is root user in Docker machine which we created.
-                // When we execute this, jenking master initiates jenkin slave. Jenkin slave will connect to Docker Vm using the cred and execuste
-                
-                
-                // As we dont want to hardcode ip address, we can keep public ip addrs as "Environment variables" under Manage Jenkins>System>Global Properties
-                //sshpass -p password ssh -o StrictHostKeyChecking=no username@ipaddress command_to_run. 
-                // Command: docker run -d -p hp:cp --name containername image:tagname ( container port 8761 is always same in all different environment for Eureka application)
-                // docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}
-              //  sh "sshpass -p  ${password} ssh -o StrictHostKeyChecking=no ${username}@${docker_server_ip} docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
-                //}
-
                 script{
-                    // This block is written because if the container is running already and run the jenkin file it was throwing error because the container name already exists so we are writing the below
-                    // to make sure we catch any exception in try catch.
-
-                    // pull the image 
-                  sh "docker pull  ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
-
-                  try{
-                    //Stop the container
-                    sh "docker stop ${env.Application_Name}-stg"
-
-                    //remove the container
-                    sh "docker rm ${env.Application_Name}-stg"
-
-                  } catch(err){
-                    echo "Error Caught: $err"
-                  }
-                  // create the container
-                echo "*************************  Running the stg Container  *****************************"
-                sh "docker run -d -p 7761:8761 --name ${env.Application_Name}-stg ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+                    imageValidation().call()
+                    dockerDeploy('stg', '7761', '8761' ).call()
                 }
             }
         }
+
+        stage ("Deploy to Prod"){
+            when {
+                anyOf{
+                    expression {
+                        params.deployToProd == "yes"
+                    }
+                }
+            }
+            steps {
+                script{
+                    imageValidation().call()
+                    dockerDeploy('prd', '8761', '8761' ).call()
+                }
+            }
+        }       
+        
+    }
+}
+
+// Create a Method to Deploy our application into various environments
+
+ def dockerDeploy(envDeploy, hostPort, contPort){
+     return {
+        // for every env, what will change: Application Name, HostPort, ContainerPort, Container Name, Environment Name
+            echo "*************************  Deploy to ${envDeploy}  *****************************"
+            script{
+            sh "docker pull  ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+            try{
+               //Stop the container
+                sh "docker stop ${env.Application_Name}-${envDeploy}"
+                //remove the container
+                sh "docker rm ${env.Application_Name}-${envDeploy}"
+            } catch(err){
+                echo "Error Caught: $err"
+              }
+            // create the container
+            echo "*************************  Running the stg Container  *****************************"
+            sh "docker run -d -p ${hostPort}:${contPort} --name ${env.Application_Name}-${envDeploy} ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+            }
+     }
+ }
+
+def imageValidation(){
+    return{
+        println ("Pulling the docker image")
+        try{
+            sh "docker pull  ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+        }
+        catch (Exception e){
+            println("Docker image with this tag doesnt exist, so creating the image")
+            buildApp().call()
+            dockerBuildandPush().call()
         }
     }
 }
+
+def buildApp(){
+    return {
+        echo "Building ${env.Application_Name} Application"
+        // build using maven
+        sh 'mvn clean package -DskipTests=true'
+        archiveArtifacts artifacts: 'target/*.jar'
+    }
+}
+
+def dockerBuildandPush(){
+    return{
+        echo "Starting Docker Build "
+        echo "Copy the jar to the folder where Docker file is present"
+        sh "cp ${WORKSPACE}/target/i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging} ./.cicd/"
+        echo "********************* Building Docker Image ********************"
+        sh "docker build --force-rm  --no-cache --build-arg JAR_SRC=i27-${env.Application_Name}-${env.Pom_Version}.${env.Pom_Packaging}  -t ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT} ./.cicd"
+        echo "********************* Login to Docker Repo ********************"
+        sh "docker login -u ${Docker_Creds_USR} -p ${Docker_Creds_PSW}"
+        echo "********************* Docker Push ********************"
+        sh "docker push ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+    }
+}
+
+ // --------------------------------------------- For Reference -----------------------------------------
+
+        //  stage ('Deploy to Dev'){
+        //     steps {
+        //        // echo "*************************  Deploy to Dev  *****************************"
+        //         //withCredentials([usernamePassword(credentialsId: 'ali_dock-vm', passwordVariable: 'password', usernameVariable: 'username')]) {
+        //         //With this block Slave will connect to docker server using ssh and will execute the commands we want.
+        //         // Connect to the Docker Server from Jenkin machine. Credentials for user ali are stored in Jenkin  using the above. The user ali is root user in Docker machine which we created.
+        //         // When we execute this, jenking master initiates jenkin slave. Jenkin slave will connect to Docker Vm using the cred and execuste
+                
+                
+        //         // As we dont want to hardcode ip address, we can keep public ip addrs as "Environment variables" under Manage Jenkins>System>Global Properties
+        //         //sshpass -p password ssh -o StrictHostKeyChecking=no username@ipaddress command_to_run. 
+        //         // Command: docker run -d -p hp:cp --name containername image:tagname ( container port 8761 is always same in all different environment for Eureka application)
+        //         // docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}
+        //       //  sh "sshpass -p  ${password} ssh -o StrictHostKeyChecking=no ${username}@${docker_server_ip} docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+        //         //}
+        //         echo "*************************  Deploy to Dev  *****************************"
+        //         script{
+        //             // This block is written because if the container is running already and run the jenkin file it was throwing error because the container name already exists so we are writing the below
+        //             // to make sure we catch any exception in try catch.
+
+        //             // pull the image 
+        //           sh "docker pull  ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+
+        //           try{
+        //             //Stop the container
+        //             sh "docker stop ${env.Application_Name}-dev"
+
+        //             //remove the container
+        //             sh "docker rm ${env.Application_Name}-dev"
+
+        //           } catch(err){
+        //             echo "Error Caught: $err"
+        //           }
+        //           // create the container
+        //         echo "*************************  Running the Dev Container  *****************************"
+        //         sh "docker run -d -p 5761:8761 --name ${env.Application_Name}-dev ${env.Docker_Hub}/${env.Application_Name}:${GIT_COMMIT}"
+        //         }
+        //     }
+        // }
