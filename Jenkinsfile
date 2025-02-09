@@ -133,15 +133,23 @@ pipeline{
 
         stage ("Deploy to Prod With approval"){
             when {
-                anyOf{
-                    expression {
-                        params.deployToProd == "yes"
+                allOf {
+                    anyOf {
+                        expression {
+                            params.deployToProd == "yes"
+                        }
+                    }
+
+                    anyOf {
+                        expression {
+                            branch 'release/*'
+                        }
                     }
                 }
             }
             steps {
                 script{
-                    timeout(time:300, unit: SECONDS){
+                    timeout(time:300, unit: 'SECONDS'){
                     input message: "Deploying to ${env.Application_Name} to Prod", ok: 'yes', submitter: 'jack'
                     }
                     imageValidation().call()
