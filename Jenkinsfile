@@ -141,6 +141,9 @@ pipeline{
             }
             steps {
                 script{
+                    timeout(time:300, unit: SECONDS){
+                    input message: "Deploying to ${env.Application_Name} to Prod", ok: 'yes', submitter: 'jack'
+                    }
                     imageValidation().call()
                     dockerDeploy('prd', '8761', '8761' ).call()
                 }
