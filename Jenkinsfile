@@ -1,4 +1,4 @@
 @Library("com.smartapp.slb@main") _
-    dockerPipeline(appName: 'eurekaa')
+    k8sPipeline(appName: 'eurekaa')
         
     
