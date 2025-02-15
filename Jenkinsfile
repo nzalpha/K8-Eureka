@@ -1,5 +1,4 @@
-@Library("com.smartapp.slb@main"){
+@Library("com.smartapp.slb@main") _
     dockerPipeline{
         appName: 'eureka'
     }
-}
