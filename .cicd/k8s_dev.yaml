@@ -15,9 +15,9 @@ spec:
         name: eureka-dev
     spec:
       containers:
-        - image: dit
-          name: eureka-dev
-          
+      - image: dit
+        name: eureka-dev
+
 ---
 apiVersion: v1
 kind: Service
