@@ -8,15 +8,15 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      name: eureka-dev
+      app: eureka-dev
   template:
     metadata:
       labels:
-        name: eureka-dev
+        app: eureka-dev
     spec:
       containers:
-      - image: dit
-        name: eureka-dev
+      - name: eureka-dev
+        image: DIT
 
 ---
 apiVersion: v1
